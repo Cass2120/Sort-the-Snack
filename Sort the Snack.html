@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Sorting Fun!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pacifico', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(to right, #a8e063, #56ab2f); /* Green gradient background */
+            color: #333;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Adjusted for smaller items */
+            gap: 15px; /* Reduced gap */
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 700px; /* Max width for better layout on larger screens */
+        }
+
+        .food-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Center content vertically */
+            border: 3px dashed #ff9800; /* Orange dashed border */
+            border-radius: 10px;
+            padding: 10px;
+            background-color: #fff; /* White background for items */
+            transition: all 0.3s ease; /* Smooth transitions */
+        }
+
+        .food-item img {
+            width: 80px; /* Smaller image size */
+            height: 80px; /* Smaller image size */
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 8px; /* Reduced margin */
+            pointer-events: none; /* Prevent dragging image instead of label */
+        }
+
+        .food-name {
+            font-size: 1em; /* Adjusted font size */
+            font-weight: bold;
+            color: #555;
+            min-height: 1.2em; /* Ensure space even when empty */
+        }
+
+        .labels-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px; /* Reduced gap */
+            margin-top: 30px;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 600px; /* Max width for labels */
+        }
+
+        .label {
+            padding: 10px 15px;
+            background-color: #ff5722; /* Orange-red background */
+            color: white;
+            border-radius: 20px; /* Pill shape */
+            cursor: grab;
+            font-weight: bold;
+            touch-action: none; /* Prevent default touch behavior */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        .label:active {
+            cursor: grabbing;
+        }
+
+        .label.dragging {
+            opacity: 0.7;
+            transform: scale(1.1); /* Slightly enlarge when dragging */
+        }
+
+        .food-item.dragover {
+            border-color: #4CAF50; /* Green border when dragging over */
+            background-color: #e8f5e9; /* Light green background */
+            transform: scale(1.05); /* Slightly enlarge drop target */
+        }
+
+        .food-item.matched {
+            border-color: #4CAF50; /* Green border when matched */
+            background-color: #d4edda; /* Lighter green when matched */
+        }
+
+        .food-item.matched .food-name {
+            color: #1b5e20; /* Darker green for matched text */
+            font-weight: bold;
+        }
+
+         .feedback {
+            margin-top: 25px; /* Adjusted margin */
+            font-size: 1.3em; /* Slightly larger font */
+            min-height: 1.6em; /* Reserve space */
+            text-align: center;
+         }
+
+        .correct {
+            color: #1b5e20; /* Dark green */
+            font-weight: bold;
+        }
+
+        .incorrect {
+            color: #d32f2f; /* Red */
+            font-weight: bold;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            font-family: 'Pacifico', cursive;
+            background-color: #ff9800; /* Orange button */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        button:hover {
+            background-color: #f57c00; /* Darker orange on hover */
+        }
+
+        button:active {
+            transform: scale(0.98); /* Slightly shrink on click */
+        }
+    </style>
+</head>
+<body>
+    <h1>Sort the Food!</h1>
+
+    <div class="game-container" id="gameContainer">
+        </div>
+
+    <div class="labels-container" id="labelsContainer">
+        </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <script>
+        // Data for the food items and their corresponding images
+        const foodItemsData = [
+            { name: 'Apple', image: 'https://img.freepik.com/free-psd/close-up-delicious-apple_23-2151868338.jpg?t=st=1744969450~exp=1744973050~hmac=061783e9bdcf5648b30a20a82f54fc167b23db6c5ddbc94b653539139358a5e7&w=1380' }, // Image for Apple
+            { name: 'Banana', image: 'https://images.immediate.co.uk/production/volatile/sites/30/2017/01/Bunch-of-bananas-67e91d5.jpg' }, // Image for Banana
+            { name: 'Carrot', image: 'https://cdn11.bigcommerce.com/s-kc25pb94dz/images/stencil/1280x1280/products/271/762/Carrot__40927.1634584458.jpg?c=2' }, // Image for Carrot
+            { name: 'Broccoli', image: 'https://cdn11.bigcommerce.com/s-kc25pb94dz/images/stencil/1280x1280/products/194/608/Broccoli_3ct__19870.1656079722.jpg?c=2' }, // Image for Broccoli
+            { name: 'Milk', image: 'https://premierproduceone.com/media/catalog/product/cache/28bf51390c6a7eeeeb3ce2b166c68ce8/9/4/94568_whole_milk.jpeg.jpg' }, // Image for Milk
+            { name: 'Bread', image: 'https://assets.bonappetit.com/photos/5c62e4a3e81bbf522a9579ce/1:1/w_2254,h_2254,c_limit/milk-bread.jpg' }, // Image for Bread
+            { name: 'Cheese', image: 'https://www.healthyfood.com/wp-content/uploads/2017/03/Guide_to_cheese-1024x851.jpg' }, // Image for Cheese
+            { name: 'Grapes', image: 'https://www.harrisfarm.com.au/cdn/shop/products/44911-thomson-white-grapes-done.jpg?v=1614895406&width=1946' } // Image for Grapes
+        ];
+
+        const gameContainer = document.getElementById('gameContainer');
+        const labelsContainer = document.getElementById('labelsContainer');
+        const feedbackElement = document.getElementById('feedback');
+
+        let draggedItem = null; // To keep track of the element being dragged
+
+        // Fisher-Yates (Knuth) Shuffle Algorithm to randomize array order
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+            }
+            return array;
+        }
+
+        // Function to set up the game board
+        function initializeGame() {
+            // Clear previous game elements
+            gameContainer.innerHTML = '';
+            labelsContainer.innerHTML = '';
+            feedbackElement.textContent = '';
+
+            // Shuffle food items and labels for a new game each time
+            const shuffledFoodItems = shuffleArray([...foodItemsData]);
+            const shuffledLabels = shuffleArray([...foodItemsData.map(item => item.name)]);
+
+            // Create and append food item elements to the game container
+            shuffledFoodItems.forEach(item => {
+                const foodItemElement = document.createElement('div');
+                foodItemElement.classList.add('food-item');
+                // Store the correct food name as a data attribute
+                foodItemElement.setAttribute('data-name', item.name);
+                foodItemElement.innerHTML = `
+                    <img src="${item.image}" alt="${item.name}">
+                    <div class="food-name">?</div>
+                `;
+                // Add event listeners for drag and drop functionality
+                foodItemElement.addEventListener('dragover', handleDragOver);
+                foodItemElement.addEventListener('dragleave', handleDragLeave);
+                foodItemElement.addEventListener('drop', handleDrop);
+                gameContainer.appendChild(foodItemElement);
+            });
+
+            // Create and append draggable label elements to the labels container
+            shuffledLabels.forEach(labelName => {
+                const labelElement = document.createElement('div');
+                labelElement.classList.add('label');
+                labelElement.setAttribute('draggable', true); // Make the element draggable
+                labelElement.textContent = labelName;
+                // Add event listeners for drag events
+                labelElement.addEventListener('dragstart', handleDragStart);
+                labelElement.addEventListener('dragend', handleDragEnd);
+                labelsContainer.appendChild(labelElement);
+            });
+        }
+
+        // Handle the start of a drag operation
+        function handleDragStart(event) {
+            draggedItem = event.target;
+            // Set the allowed drag effect and the data to be transferred (the label text)
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', event.target.textContent);
+            // Add a class for styling the dragged item, with a slight delay
+            setTimeout(() => {
+                draggedItem.classList.add('dragging');
+            }, 0);
+        }
+
+        // Handle the end of a drag operation
+        function handleDragEnd() {
+            // Remove the dragging class and reset the dragged item
+            if (draggedItem) {
+                draggedItem.classList.remove('dragging');
+                draggedItem = null;
+            }
+        }
+
+        // Handle an element being dragged over a potential drop target
+        function handleDragOver(event) {
+            event.preventDefault(); // Prevent default behavior to allow dropping
+            // Add a class to the food item being dragged over for visual feedback
+            event.target.closest('.food-item').classList.add('dragover');
+        }
+
+        // Handle a dragged element leaving a drop target
+        function handleDragLeave(event) {
+             // Remove the dragover class when the dragged element leaves
+             event.target.closest('.food-item').classList.remove('dragover');
+        }
+
+        // Handle an element being dropped onto a drop target
+        function handleDrop(event) {
+            event.preventDefault();
+            const foodItemElement = event.target.closest('.food-item');
+            // Remove the dragover class
+            foodItemElement.classList.remove('dragover');
+
+            // Get the data transferred during the drag (the label text)
+            const droppedLabel = event.dataTransfer.getData('text/plain');
+            // Get the correct food name from the data attribute of the food item
+            const correctFoodName = foodItemElement.getAttribute('data-name');
+            const foodNameElement = foodItemElement.querySelector('.food-name');
+
+            // Check if the dropped label matches the correct food item
+            if (droppedLabel === correctFoodName) {
+                foodNameElement.textContent = correctFoodName; // Display the correct name
+                foodItemElement.classList.add('matched'); // Mark the food item as matched
+                draggedItem.remove(); // Remove the matched label from the labels area
+                showFeedback('Correct!', 'correct'); // Show positive feedback
+                checkWinCondition(); // Check if the game is won
+            } else {
+                showFeedback('Try again!', 'incorrect'); // Show negative feedback
+            }
+        }
+
+        // Display feedback messages to the user
+        function showFeedback(message, type) {
+            feedbackElement.textContent = message;
+            // Set class for styling the feedback (correct or incorrect)
+            feedbackElement.className = 'feedback ' + type;
+        }
+
+        // Check if all food items have been matched
+        function checkWinCondition() {
+            const unmatchedFoodItems = gameContainer.querySelectorAll('.food-item:not(.matched)');
+            if (unmatchedFoodItems.length === 0) {
+                showFeedback('You sorted all the food! Great job!', 'correct');
+                 // Add a "Play Again!" button after a short delay
+                 setTimeout(() => {
+                    const playAgainButton = document.createElement('button');
+                    playAgainButton.textContent = 'Play Again!';
+                    playAgainButton.onclick = initializeGame; // Restart the game on click
+                    feedbackElement.appendChild(playAgainButton);
+                 }, 1000);
+            }
+        }
+
+        // Initialize the game when the page finishes loading
+        initializeGame();
+
+    </script>
+</body>
+</html>
